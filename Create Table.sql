@@ -13,9 +13,11 @@ DROP TYPE IF EXISTS reservation_status;
 CREATE TYPE reservation_status AS ENUM ('pending', 'reserved', 'fulfilled', 'canceled');
 
 CREATE TABLE authors (
-  id   SERIAL PRIMARY KEY,
-  name VARCHAR(150) NOT NULL,
-  bio  TEXT
+  id          SERIAL       PRIMARY KEY,
+  name        VARCHAR(150) NOT NULL,
+  bio         TEXT,
+  nationality VARCHAR(100),
+  birth_year  INT CHECK (birth_year BETWEEN 1000 AND 2025)
 );
 
 CREATE TABLE members (
@@ -38,14 +40,19 @@ CREATE TABLE books (
 );
 
 CREATE TABLE genres (
-  id          SERIAL PRIMARY KEY,
-  name        VARCHAR(100) NOT NULL,
-  description TEXT
+  id              SERIAL       PRIMARY KEY,
+  name            VARCHAR(100) NOT NULL,
+  description     TEXT,
+  parent_genre_id INT          REFERENCES genres(id) ON DELETE SET NULL,
+  is_active       BOOLEAN      NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE book_genres (
-  book_id  INT NOT NULL REFERENCES books(id)  ON DELETE RESTRICT,
-  genre_id INT NOT NULL REFERENCES genres(id) ON DELETE RESTRICT,
+  book_id          INT     NOT NULL REFERENCES books(id)  ON DELETE RESTRICT,
+  genre_id         INT     NOT NULL REFERENCES genres(id) ON DELETE RESTRICT,
+  added_date       DATE    NOT NULL DEFAULT CURRENT_DATE,
+  added_by         INT     REFERENCES members(id)         ON DELETE SET NULL,
+  is_primary_genre BOOLEAN NOT NULL DEFAULT FALSE,
   PRIMARY KEY (book_id, genre_id)
 );
 
