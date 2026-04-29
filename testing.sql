@@ -189,7 +189,6 @@ INSERT INTO books (author_id, title, isbn, quantity, available_quantity) VALUES
 UPDATE books SET isbn = '978-0156837028' WHERE title = 'Solaris';
 
 
-
 INSERT INTO book_genres (book_id, genre_id, is_primary_genre) VALUES
   (1,  6,  TRUE),  
   (1,  1,  FALSE),  
@@ -360,23 +359,21 @@ INSERT INTO reservations (member_id, book_id, reserved_date, status) VALUES
   (13, 11, '2026-04-19', 'pending');
 
 
-SELECT * FROM books;
-
 CREATE OR REPLACE PROCEDURE run_trigger_tests()
 LANGUAGE plpgsql
 AS $$
 BEGIN
 
   PERFORM test_log('');
-  PERFORM test_log('=== TRIGGER TESTS ===');
+  PERFORM test_log('TRIGGER TESTS');
 
 
   PERFORM test_log('');
-  PERFORM test_log('[T1] Loan Dune to Alice – should succeed');
+  PERFORM test_log('[T1] Loan Diaspora to Alice – should succeed');
 
-  INSERT INTO loans (member_id, book_id) VALUES (1, 3);
+  INSERT INTO loans (member_id, book_id) VALUES (1, 45);
 
-  IF (SELECT available_quantity FROM books WHERE id = 3) = 0 THEN
+  IF (SELECT available_quantity FROM books WHERE id = 45) = 0 THEN
     PERFORM test_log('  PASS: available_quantity decremented to 0');
   ELSE
     PERFORM test_log('  FAIL: available_quantity not decremented');
@@ -390,10 +387,10 @@ BEGIN
 
 
   PERFORM test_log('');
-  PERFORM test_log('[T2] Loan Dune to Bob while qty=0 – should raise exception');
+  PERFORM test_log('[T2] Loan Diaspora to Bob while qty=0 – should raise exception');
 
   BEGIN
-    INSERT INTO loans (member_id, book_id) VALUES (2, 3);
+    INSERT INTO loans (member_id, book_id) VALUES (2, 45);
     PERFORM test_log('  FAIL: insert succeeded but should have raised exception');
   EXCEPTION WHEN others THEN
     PERFORM test_log('  PASS: exception caught: ' || SQLERRM);
@@ -401,14 +398,14 @@ BEGIN
 
 
   PERFORM test_log('');
-  PERFORM test_log('[T3] Return Dune – available_quantity should become 1');
+  PERFORM test_log('[T3] Return Diaspora – available_quantity should become 1');
 
   UPDATE loans
      SET returned_date = CURRENT_DATE
-   WHERE book_id = 3
+   WHERE book_id = 45
      AND returned_date IS NULL;
 
-  IF (SELECT available_quantity FROM books WHERE id = 3) = 1 THEN
+  IF (SELECT available_quantity FROM books WHERE id = 45) = 1 THEN
     PERFORM test_log('  PASS: available_quantity restored to 1');
   ELSE
     PERFORM test_log('  FAIL: available_quantity not restored');
@@ -418,25 +415,25 @@ BEGIN
   PERFORM test_log('');
   PERFORM test_log('[T4] Reservation auto-promote on book return');
 
-  INSERT INTO loans (member_id, book_id) VALUES (1, 3);
-  INSERT INTO reservations (member_id, book_id) VALUES (2, 3);
+  INSERT INTO loans (member_id, book_id) VALUES (1, 45);
+  INSERT INTO reservations (member_id, book_id) VALUES (2, 45);
 
   PERFORM test_log('  Bob reservation status before return: ' ||
-    (SELECT status::TEXT FROM reservations WHERE member_id = 2 AND book_id = 3 ORDER BY id DESC LIMIT 1));
+    (SELECT status::TEXT FROM reservations WHERE member_id = 2 AND book_id = 45 ORDER BY id DESC LIMIT 1));
 
   UPDATE loans
      SET returned_date = CURRENT_DATE
-   WHERE book_id = 3
+   WHERE book_id = 45
      AND member_id = 1
      AND returned_date IS NULL;
 
-  IF (SELECT status FROM reservations WHERE member_id = 2 AND book_id = 3 ORDER BY id DESC LIMIT 1) = 'reserved' THEN
+  IF (SELECT status FROM reservations WHERE member_id = 2 AND book_id = 45 ORDER BY id DESC LIMIT 1) = 'reserved' THEN
     PERFORM test_log('  PASS: Bob''s reservation promoted to ''reserved''');
   ELSE
     PERFORM test_log('  FAIL: reservation status not updated');
   END IF;
 
-  IF (SELECT available_quantity FROM books WHERE id = 3) = 0 THEN
+  IF (SELECT available_quantity FROM books WHERE id = 45) = 0 THEN
     PERFORM test_log('  PASS: available_quantity held at 0 (copy reserved for Bob)');
   ELSE
     PERFORM test_log('  FAIL: available_quantity incorrectly incremented');
@@ -447,7 +444,7 @@ BEGIN
   PERFORM test_log('[T5] Duplicate reservation – should raise exception');
 
   BEGIN
-    INSERT INTO reservations (member_id, book_id) VALUES (2, 3);
+    INSERT INTO reservations (member_id, book_id) VALUES (2, 45);
     PERFORM test_log('  FAIL: duplicate reservation was allowed');
   EXCEPTION WHEN others THEN
     PERFORM test_log('  PASS: exception caught: ' || SQLERRM);
@@ -457,17 +454,17 @@ BEGIN
   PERFORM test_log('');
   PERFORM test_log('[T6] Two loans against a 2-copy book – both should succeed');
 
-  INSERT INTO loans (member_id, book_id) VALUES (1, 1);
-  INSERT INTO loans (member_id, book_id) VALUES (2, 1);
+  INSERT INTO loans (member_id, book_id) VALUES (1, 10);
+  INSERT INTO loans (member_id, book_id) VALUES (2, 10);
 
-  IF (SELECT available_quantity FROM books WHERE id = 1) = 0 THEN
+  IF (SELECT available_quantity FROM books WHERE id = 10) = 0 THEN
     PERFORM test_log('  PASS: both copies checked out, available_quantity = 0');
   ELSE
     PERFORM test_log('  FAIL: unexpected available_quantity');
   END IF;
 
   BEGIN
-    INSERT INTO loans (member_id, book_id) VALUES (3, 1);
+    INSERT INTO loans (member_id, book_id) VALUES (3, 10);
     PERFORM test_log('  FAIL: third loan on 0-qty book was allowed');
   EXCEPTION WHEN others THEN
     PERFORM test_log('  PASS: third loan blocked: ' || SQLERRM);
@@ -520,7 +517,7 @@ BEGIN
 
 
   PERFORM test_log('');
-  PERFORM test_log('=== TRIGGER TESTS COMPLETE ===');
+  PERFORM test_log('TRIGGER TESTS COMPLETE');
 
 END;
 $$;
@@ -672,7 +669,7 @@ BEGIN
     ALTER SEQUENCE public.reservations_id_seq RESTART WITH 1;
     RAISE NOTICE 'Cleanup complete.';
   ELSE
-    RAISE NOTICE 'Cleanup skipped. Run SET app.do_cleanup = true; before this block to enable.';
+    RAISE NOTICE 'Cleanup skipped.';
   END IF;
 END;
 $$;
