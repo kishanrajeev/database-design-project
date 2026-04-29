@@ -183,10 +183,8 @@ INSERT INTO books (author_id, title, isbn, quantity, available_quantity) VALUES
   (37, 'Stories of Your Life',         '978-1101972120', 3, 3),
   (38, 'The Paper Menagerie',          '978-1481424363', 3, 3),
   (39, 'The Three-Body Problem',       '978-0765382030', 3, 3),
-  (40, 'Solaris',                      '978-0156837installé', 2, 2),
+  (40, 'Solaris',                      '978-0156837028', 2, 2),
   (41, 'Ficciones',                    '978-0802130303', 2, 2);
-
-UPDATE books SET isbn = '978-0156837028' WHERE title = 'Solaris';
 
 
 INSERT INTO book_genres (book_id, genre_id, is_primary_genre) VALUES
