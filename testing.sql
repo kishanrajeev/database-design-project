@@ -323,17 +323,20 @@ SELECT
   b.quantity                                         AS total_copies,
   b.available_quantity,
   b.quantity - b.available_quantity                  AS copies_on_loan,
-  COUNT(l.id) FILTER (WHERE l.returned_date IS NULL) AS open_loan_count,
+  COUNT(DISTINCT l.id) FILTER (WHERE l.returned_date IS NULL) AS open_loan_count,
+  COUNT(DISTINCT r.id) FILTER (WHERE r.status IN ('pending', 'reserved')) AS reserved_count,
   CASE
     WHEN b.available_quantity < 0                    THEN 'NEGATIVE – data error'
     WHEN b.available_quantity > b.quantity           THEN 'EXCEEDS TOTAL – data error'
     WHEN b.quantity - b.available_quantity <>
-         COUNT(l.id) FILTER (WHERE l.returned_date IS NULL)
+         COUNT(DISTINCT l.id) FILTER (WHERE l.returned_date IS NULL) +
+         COUNT(DISTINCT r.id) FILTER (WHERE r.status IN ('pending', 'reserved'))
                                                      THEN 'MISMATCH with open loans'
     ELSE                                                  'OK'
   END                                                AS health
 FROM books b
 LEFT JOIN loans l ON l.book_id = b.id
+LEFT JOIN reservations r ON r.book_id = b.id
 GROUP BY b.id, b.title, b.quantity, b.available_quantity
 ORDER BY b.id;
 
